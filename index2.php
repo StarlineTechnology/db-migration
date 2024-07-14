@@ -39,10 +39,10 @@ $result = $oscommerce_db->query("
     SELECT c.customers_id, c.customers_gender, c.customers_firstname, c.customers_lastname, c.customers_dob, 
            c.customers_email_address, c.customers_password, c.customers_date_added, c.customers_last_modified, 
            a.entry_gender, a.entry_firstname, a.entry_lastname, a.entry_street_address, a.entry_postcode, a.entry_city, a.entry_country_id,
-           g.customers_group_id
-    FROM customers c 
-    JOIN address_book a ON c.customers_id = a.customers_id
-    LEFT JOIN customers_group g ON c.customers_id = g.customers_id
+           g.customers_info_id
+        FROM customers c 
+        JOIN address_book a ON c.customers_id = a.customers_id
+        LEFT JOIN customers_info g ON c.customers_id = g.customers_id
 ");
 if (!$result) {
     die("Error retrieving customers from osCommerce: " . $oscommerce_db->error);
