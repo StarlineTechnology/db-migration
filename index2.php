@@ -1,78 +1,72 @@
 <?php
+
+// Enable error reporting
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
 // Database connection settings for osCommerce and PrestaShop
 $oscommerce_db = new mysqli('127.0.0.1:8889', 'root', 'root', 'test_lamali_oscommerce');
 $prestashop_db = new mysqli('127.0.0.1:8889', 'root', 'root', 'test_lamali_prestashop');
 
 
-if ($oscommerce_db->connect_error) {
-    die("Connection to osCommerce database failed: " . $oscommerce_db->connect_error);
-}
-if ($prestashop_db->connect_error) {
-    die("Connection to PrestaShop database failed: " . $prestashop_db->connect_error);
-}
-echo "Connected to both databases successfully.\n";
+// Query to get customers and addresses data
+$query = "SELECT c.customers_id, c.customers_firstname, c.customers_lastname, c.customers_email_address, 
+                 cp.customers_password, cm.customers_md5, 
+                 ab.entry_firstname, ab.entry_lastname, ab.entry_street_address, 
+                 ab.entry_postcode, ab.entry_city, ab.entry_country_id
+          FROM customers c
+          LEFT JOIN customers_password cp ON c.customers_id = cp.customers_id
+          LEFT JOIN customers_md5 cm ON c.customers_id = cm.customers_id
+          LEFT JOIN address_book ab ON c.customers_id = ab.customers_id";
 
-function formatDatetime($datetime) {
-    try {
-        $dt = new DateTime($datetime);
-        return $dt->format('Y-m-d H:i:s');
-    } catch (Exception $e) {
-        return null;
-    }
-}
+$result = $oscommerce_db->query($query);
 
-// Gender mapping function
-function mapGender($gender) {
-    if ($gender == 'm' || $gender == 'M') {
-        return 1; // Male
-    } elseif ($gender == 'f' || $gender == 'F') {
-        return 2; // Female
-    } else {
-        return 0; // Unknown
-    }
-}
-
-
-
-// Migrate customers, addresses, and groups
-$result = $oscommerce_db->query("
-    SELECT c.customers_id, c.customers_gender, c.customers_firstname, c.customers_lastname, c.customers_dob, 
-           c.customers_email_address, c.customers_password, c.customers_date_added, c.customers_last_modified, 
-           a.entry_gender, a.entry_firstname, a.entry_lastname, a.entry_street_address, a.entry_postcode, a.entry_city, a.entry_country_id,
-           g.customers_info_id
-        FROM customers c 
-        JOIN address_book a ON c.customers_id = a.customers_id
-        LEFT JOIN customers_info g ON c.customers_id = g.customers_id
-");
-if (!$result) {
-    die("Error retrieving customers from osCommerce: " . $oscommerce_db->error);
-}
 while ($row = $result->fetch_assoc()) {
-    $email = $prestashop_db->real_escape_string($row['customers_email_address']);
-    $password = $prestashop_db->real_escape_string($row['customers_password']);
-    $firstname = $prestashop_db->real_escape_string($row['customers_firstname']);
-    $lastname = $prestashop_db->real_escape_string($row['customers_lastname']);
-    $date_add = formatDatetime($row['customers_date_added']);
-    $date_upd = formatDatetime($row['customers_last_modified']);
-    $id_gender = mapGender($row['customers_gender']);
-    $id_default_group = $row['customers_group_id'] ? (int)$row['customers_group_id'] : 1; // Default group if none assigned
+    $customer_id = $row['customers_id'];
+    $firstname = $row['customers_firstname']);
+    $lastname = $row['customers_lastname']);
+    $email = $row['customers_email_address']);
+    $password = $row['customers_password']);
+    $date_add = $row['customers_info_date_account_created']);
+    $customer_gender = $row['customers_gender'];
+    $id_gender = ($customer_gender == 'm' || $customer_gender == 'f') ? 1 : 2;
+    $date_upd = date('Y-m-d H:i:s');
 
-    if ($date_add && $date_upd) {
-        $query = "INSERT INTO ps_customer (email, passwd, firstname, lastname, date_add, date_upd, id_gender, id_default_group) 
-                  VALUES ('$email', '$password', '$firstname', '$lastname', '$date_add', '$date_upd', '$id_gender', '$id_default_group')";
-
-        if (!$prestashop_db->query($query)) {
-            echo "Error inserting customer: " . $prestashop_db->error . "\n";
-        } else {
-            echo "Customer $firstname $lastname migrated successfully.\n";
-        }
-    } else {
-        echo "Invalid date format for customer $firstname $lastname.\n";
-    }
+    $company = $row['entry_company']);
+    $siret = $row['entry_company_tax_id']);
+    $active = $row['customers_login_allowed']);
+    $taxid = $row['entry_company_tax_id']);
+    $street = $row['entry_street_address']);
+    $post = $row['entry_postcode']);
+    $city = $row['entry_city']);
+    $country = $row['entry_country_id']);
+    $telephone = $row['customers_telephone']);
+    $fax = $row['customers_fax']);
+    
+    // Rehash the password
+    $new_password_hash = password_hash($old_password_hash, PASSWORD_BCRYPT);
+    
+    // Insert customer data into PrestaShop
+    $insertCustomerQuery = "INSERT INTO ps_customer (id_customer, id_gender, firstname, lastname, email, passwd, date_add, date_upd, active, company, siret, company_name, company_taxid, street_address, post_code, city_name, country_name, telephone_number, fax_number)
+              VALUES ($id_customer, $id_gender, '$firstname', '$lastname', '$email', '$new_password_hash', '$date_add', '$date_upd', '$active', '$company', '$siret', '$company', '$taxid', '$street', '$post', '$city', '$country', '$telephone', '$fax')";
+    $prestashop_db->query($insertCustomerQuery);
+    
+    // Prepare address data
+    $address_firstname = $row['entry_firstname'];
+    $address_lastname = $row['entry_lastname'];
+    $street_address = $row['entry_street_address'];
+    $postcode = $row['entry_postcode'];
+    $city = $row['entry_city'];
+    $country_id = $row['entry_country_id'];
+    
+    // Insert address data into PrestaShop
+    $insertAddressQuery = "INSERT INTO ps_address (id_customer, firstname, lastname, address1, postcode, city, id_country, date_add, date_upd, active)
+                           VALUES ('$customer_id', '$address_firstname', '$address_lastname', '$street_address', '$postcode', '$city', '$country_id', NOW(), NOW(), 1)";
+    $prestashop_db->query($insertAddressQuery);
 }
 
 $oscommerce_db->close();
 $prestashop_db->close();
-
-echo "Migration completed successfully!";
 ?>
+

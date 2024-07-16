@@ -14,18 +14,19 @@ function escape($db, $value) {
     return $db->real_escape_string($value);
 }
 
-// PrestaShop password hash function
-function hashPassword($password) {
-    return password_hash($password, PASSWORD_BCRYPT);
-}
+// // PrestaShop password hash function
+// function hashPassword($password) {
+//     return password_hash($password, PASSWORD_BCRYPT);
+// }
 
-// Default password for migrated users
-$default_password = "default_password";
-$hashed_default_password = hashPassword($default_password);
+// // Default password for migrated users
+// $default_password = "default_password";
+// $hashed_default_password = hashPassword($default_password);
 
 // Migrate customers
 $customers = $oscommerce_db->query("
-                                    SELECT c.customers_id, c.customers_gender, c.customers_firstname, c.customers_lastname, c.customers_email_address, c.customers_login_allowed, c.customers_password, c.customers_telephone, c.customers_fax, a.entry_company, a.entry_company_tax_id, a.entry_street_address, a.entry_postcode, a.entry_city, a.entry_country_id, ci.customers_info_date_account_created
+                                    SELECT c.customers_id, c.customers_gender, c.customers_firstname, c.customers_lastname, c.customers_email_address, c.customers_login_allowed, c.customers_password, c.customers_telephone, c.customers_fax, 
+                                    a.entry_gender, a.entry_company, a.entry_company_tax_id, a.entry_street_address, a.entry_postcode, a.entry_city, a.entry_country_id, ci.customers_info_date_account_created
                                     FROM customers c 
                                     JOIN address_book a ON c.customers_id = a.customers_id
                                     LEFT JOIN customers_info ci ON c.customers_id = ci.customers_info_id");
@@ -53,8 +54,10 @@ while ($customer = $customers->fetch_assoc()) {
     $lastname = escape($prestashop_db, $customer['customers_lastname']);
     $email = escape($prestashop_db, $customer['customers_email_address']);
     $password = escape($prestashop_db, $customer['customers_password']);
+    $passwordmd5 = escape($prestashop_db, $customer['customers_md5']);
     $date_add = escape($prestashop_db, $customer['customers_info_date_account_created']);
-    $id_gender = mapGender($row['customers_gender']);
+    $customer_gender = escape($prestashop_db, $customer['customers_gender']);
+    $id_gender = mapGender($customer_gender);
     $date_upd = date('Y-m-d H:i:s');
 
     $company = escape($prestashop_db, $customer['entry_company']);
@@ -69,7 +72,7 @@ while ($customer = $customers->fetch_assoc()) {
     $fax = escape($prestashop_db, $customer['customers_fax']);
 
     $query = "INSERT INTO ps_customer (id_customer, id_gender, firstname, lastname, email, passwd, date_add, date_upd, active, company, siret, company_name, company_taxid, street_address, post_code, city_name, country_name, telephone_number, fax_number)
-              VALUES ($id_customer, $id_gender, '$firstname', '$lastname', '$email', '$hashed_default_password', '$date_add', '$date_upd', '$active', '$company', '$siret', '$company', '$taxid', '$street', '$post', '$city', '$country', '$telephone', '$fax')";
+              VALUES ($id_customer, $id_gender, '$firstname', '$lastname', '$email', '$password$passwordmd5', '$date_add', '$date_upd', '$active', '$company', '$siret', '$company', '$taxid', '$street', '$post', '$city', '$country', '$telephone', '$fax')";
 
     if (!$prestashop_db->query($query)) {
         echo "Error inserting customer ID $id_customer: " . $prestashop_db->error . "<br><br><br><br>";
