@@ -9,6 +9,20 @@ if ($prestashop_db->connect_error) die("PrestaShop connection failed: " . $prest
 
 echo "Connected to both databases successfully.<br>";
 
+//
+// Table structure for table `zc_legacy_passwords`
+//
+
+$sql = "CREATE TABLE IF NOT EXISTS `zc_legacy_passwords` (
+  `id` int UNSIGNED NOT NULL DEFAULT '0',
+  `email` varchar(255) NOT NULL,
+  `password` varchar(255) NOT NULL,
+  `updated` tinyint(1) NOT NULL
+)";
+$prestashop_db->query($sql);
+
+
+
 // Function to escape and format values for SQL
 function escape($db, $value) {
     return $db->real_escape_string($value);
@@ -72,12 +86,17 @@ while ($customer = $customers->fetch_assoc()) {
     $fax = escape($prestashop_db, $customer['customers_fax']);
 
     $query = "INSERT INTO ps_customer (id_customer, id_gender, firstname, lastname, email, passwd, date_add, date_upd, active, company, siret, company_name, company_taxid, street_address, post_code, city_name, country_name, telephone_number, fax_number)
-              VALUES ($id_customer, $id_gender, '$firstname', '$lastname', '$email', '$password$passwordmd5', '$date_add', '$date_upd', '$active', '$company', '$siret', '$company', '$taxid', '$street', '$post', '$city', '$country', '$telephone', '$fax')";
-
+              VALUES ($id_customer, $id_gender, '$firstname', '$lastname', '$email', '$password', '$date_add', '$date_upd', '$active', '$company', '$siret', '$company', '$taxid', '$street', '$post', '$city', '$country', '$telephone', '$fax')";
+              
     if (!$prestashop_db->query($query)) {
         echo "Error inserting customer ID $id_customer: " . $prestashop_db->error . "<br><br><br><br>";
     } else {
         echo "Customer ID $id_customer migrated successfully.<br>";
+    }
+    $customer = $prestashop_db->query("SELECT * FROM `zc_legacy_passwords` WHERE `email` = '$email'");
+    if ($customer === false) {
+        $query_for_pwd_backup = "INSERT INTO zc_legacy_passwords (id, email, password, updated) VALUES ($id_customer, '$email', '$password',0)";
+        $prestashop_db->query($query_for_pwd_backup);
     }
 }
 
