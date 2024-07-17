@@ -93,6 +93,7 @@ while ($customer = $customers->fetch_assoc()) {
     } else {
         echo "Customer ID $id_customer migrated successfully.<br>";
     }
+    // Make backup for oscommerce password.
     $customer = $prestashop_db->query("SELECT * FROM `zc_legacy_passwords` WHERE `email` = '$email'");
     if ($customer === false) {
         $query_for_pwd_backup = "INSERT INTO zc_legacy_passwords (id, email, password, updated) VALUES ($id_customer, '$email', '$password',0)";
