@@ -89,15 +89,22 @@ while ($customer = $customers->fetch_assoc()) {
               VALUES ($id_customer, $id_gender, '$firstname', '$lastname', '$email', '$password', '$date_add', '$date_upd', '$active', '$company', '$siret', '$company', '$taxid', '$street', '$post', '$city', '$country', '$telephone', '$fax')";
               
     if (!$prestashop_db->query($query)) {
-        echo "Error inserting customer ID $id_customer: " . $prestashop_db->error . "<br><br><br><br>";
+        echo "Error inserting customer ID $id_customer: " . $prestashop_db->error . "<br>";
     } else {
         echo "Customer ID $id_customer migrated successfully.<br>";
     }
     // Make backup for oscommerce password.
-    $customer = $prestashop_db->query("SELECT * FROM `zc_legacy_passwords` WHERE `email` = '$email'");
-    if ($customer === false) {
+    $customer = $prestashop_db->query("SELECT count(*) FROM FROM `zc_legacy_passwords` WHERE `email` = '$email'");
+    if ($customer){
+        echo "Customer already exists <br>";
+    }else{
         $query_for_pwd_backup = "INSERT INTO zc_legacy_passwords (id, email, password, updated) VALUES ($id_customer, '$email', '$password',0)";
-        $prestashop_db->query($query_for_pwd_backup);
+    
+        if (!$prestashop_db->query($query_for_pwd_backup)) {
+            echo "<span style='color:red'>Error inserting customer ID to Legacy $id_customer: " . $prestashop_db->error . "</span><br>";
+        } else {
+            echo "Customer ID $id_customer migrated successfully.<br>";
+        }
     }
 }
 
