@@ -94,6 +94,7 @@ while ($customer = $customers->fetch_assoc()) {
         echo "Customer ID $id_customer migrated successfully.<br>";
     }
     // Make backup for oscommerce password.
+
     $customer = $prestashop_db->query("SELECT count(*) FROM FROM `zc_legacy_passwords` WHERE `email` = '$email'");
     if ($customer){
         echo "Customer already exists <br>";
@@ -105,6 +106,7 @@ while ($customer = $customers->fetch_assoc()) {
         } else {
             echo "Customer ID $id_customer migrated successfully.<br>";
         }
+
     }
 }
 
