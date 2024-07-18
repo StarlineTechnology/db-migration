@@ -109,6 +109,7 @@ while ($customer = $customers->fetch_assoc()) {
 }
 
 
+
 echo "Migration completed.";
 
 $oscommerce_db->close();
