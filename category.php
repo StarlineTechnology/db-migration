@@ -10,7 +10,6 @@ span {
   display: inline-block;
 }</style>";
 
-
 while ($row = $result->fetch_assoc()) {
     $id_category = $prestashop_db->real_escape_string($row['categories_id']);
     $id_parent = $prestashop_db->real_escape_string($row['parent_id']);
